@@ -1,0 +1,81 @@
+# ============================================================
+# 电商 Hadoop 数据实时处理系统 - 基础中间件（轻量化配置）
+# 适用环境：本地 Mac（M1 Pro / Docker 内存约 8GB）
+# 包含：MySQL 8.0 + Redis 7 + Kafka 3.x（KRaft 模式，无 ZooKeeper）
+# 启动：docker compose -f docker-compose-base.yml up -d
+# ============================================================
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ds_mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=256M
+      - --lower_case_table_names=1
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ds_hadoop_2026}
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-ds_hadoop_2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # 内存预算：约 0.5GB
+
+  redis:
+    image: redis:7-alpine
+    container_name: ds_redis
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    # 内存预算：约 0.3GB
+
+  kafka:
+    image: apache/kafka:3.7.1
+    container_name: ds_kafka
+    environment:
+      # KRaft 单节点模式（省去 ZooKeeper）
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      # 容器外访问用 localhost；容器内（Flink）访问用 kafka:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,INTERNAL://kafka:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_HEAP_OPTS: "-Xmx1g -Xms1g"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    # 内存预算：约 1.2GB
+
+volumes:
+  mysql-data:
+  redis-data:
+  kafka-data:

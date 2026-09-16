@@ -1,0 +1,45 @@
+# ============================================================
+# 电商 Hadoop 数据实时处理系统 - 计算与分析层（轻量化配置）
+# 包含：Flink 1.18（JobManager + TaskManager）+ Apache Doris（all-in-one）
+# 依赖：docker-compose-base.yml 中的 kafka 已启动
+# 启动：docker compose -f docker-compose-bigdata.yml up -d
+# 注意：Doris all-in-one 镜像较大（约 10GB），首次拉取耗时较长
+# ============================================================
+services:
+  flink-jobmanager:
+    image: flink:1.18.1-scala_2.12-java11
+    container_name: ds_flink_jm
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1024m
+    ports:
+      - "8081:8081"   # Flink Web UI
+    # 内存预算：约 1.0GB
+
+  flink-taskmanager:
+    image: flink:1.18.1-scala_2.12-java11
+    container_name: ds_flink_tm
+    command: taskmanager
+    depends_on:
+      - flink-jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.memory.process.size: 2048m
+        taskmanager.numberOfTaskSlots: 2
+    # 内存预算：约 2.0GB
+
+  doris:
+    # 官方快速体验镜像：FE + BE 单容器
+    image: apache/doris:2.1.6
+    container_name: ds_doris
+    ports:
+      - "8030:8030"   # FE HTTP
+      - "8040:8040"   # BE HTTP
+      - "9030:9030"   # FE MySQL 协议（BI 工具/后端查询入口）
+    # 内存预算：约 3.0GB
+    # 注意：all-in-one 快速镜像适合开发验证，生产需 FE/BE 分离部署
