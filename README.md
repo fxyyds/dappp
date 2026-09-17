@@ -63,6 +63,15 @@ cd deploy/docker
 docker compose -f docker-compose-base.yml up -d      # MySQL + Redis + Kafka
 docker compose -f docker-compose-bigdata.yml up -d   # Flink + Doris（首次拉镜像较慢）
 bash init-topics.sh                                  # 创建 Kafka topic
+```
+
+导入基础数据（MySQL 容器健康后执行）：
+
+```bash
+# RuoYi 基座表 + 演示数据（含 AI/任务调度脚本，按需导入）
+mysql -h127.0.0.1 -uroot -pds_hadoop_2026 ry-vue-plus < ../../ruoyi-vue-plus/script/sql/ry_vue.sql
+# 销售实时大屏菜单
+mysql -h127.0.0.1 -uroot -pds_hadoop_2026 ry-vue-plus < sales-menu.sql
 # Doris 建表：用 MySQL 客户端连 9030 执行 doris-schema.sql
 ```
 
