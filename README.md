@@ -37,9 +37,8 @@
 
 ```
 ├── deploy/
-│   ├── docker/            # 中间件编排（MySQL/Redis/Kafka/Flink/Doris）+ 初始化脚本
-│   ├── streampark/        # StreamPark 2.1.7 发行包
-│   └── flink-connectors/  # Flink Kafka/Doris 连接器 jar
+│   └── docker/            # 中间件编排（MySQL/Redis/Kafka/Flink/Doris）+ 初始化脚本
+│                          # StreamPark 发行包与 Flink 连接器按需下载（见快速开始）
 ├── datagen/               # 模拟数据生成器（Java，持续写入双租户订单事件）
 ├── flink-jobs/            # Flink SQL 作业定义（sales-realtime.sql）
 ├── ruoyi-vue-plus/        # 后端（含自研 ruoyi-sales 销售实时分析模块）
@@ -78,12 +77,24 @@ mysql -h127.0.0.1 -uroot -pds_hadoop_2026 ry-vue-plus < sales-menu.sql
 ### 2. 启动 StreamPark 并提交 Flink 作业
 
 ```bash
-cd deploy/streampark/apache-streampark_2.12-2.1.7-bin
+# 下载并解压（约 470MB，首次需要）
+curl -fO https://archive.apache.org/dist/streampark/2.1.7/apache-streampark_2.12-2.1.7-bin.tar.gz
+tar -xzf apache-streampark_2.12-2.1.7-bin.tar.gz
+cd apache-streampark_2.12-2.1.7-bin
 bin/startup.sh    # Web UI http://localhost:10000，默认 admin/streampark
 ```
 
-在 StreamPark 中以 Flink SQL 模式提交 `flink-jobs/sales-realtime.sql`
-（需先将 `deploy/flink-connectors/` 下的连接器 jar 放入 `deploy/docker/flink-lib/`）。
+StreamPark 元数据库使用 compose 中的 MySQL（库名 `streampark`，已自动创建）。
+
+提交作业前需准备 Flink 连接器（下载后放入 `deploy/docker/flink-lib/`，compose 已挂载该目录）：
+
+```bash
+mkdir -p deploy/docker/flink-lib && cd deploy/docker/flink-lib
+curl -fO https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.1.0-1.18/flink-sql-connector-kafka-3.1.0-1.18.jar
+curl -fO https://repo.maven.apache.org/maven2/org/apache/doris/flink-doris-connector-1.18/24.0.1/flink-doris-connector-1.18-24.0.1.jar
+```
+
+然后在 StreamPark 中以 Flink SQL 模式提交 `flink-jobs/sales-realtime.sql`。
 
 ### 3. 启动数据生成器
 
