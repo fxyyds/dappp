@@ -17,9 +17,11 @@ import { ElMessage } from 'element-plus';
 
 import { useAuthStore } from '#/store';
 
-import { refreshTokenApi } from './core';
-
+import { refreshTokenApi } from './core';// 相关的配置
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
+
+/** RuoYi-Vue-Plus 客户端ID（sys_client 表 password 认证方式） */
+export const CLIENT_ID = 'e5cd7e4891bf95d1d19206ce24a7b32e';
 
 function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   const client = new RequestClient({
@@ -64,21 +66,22 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   client.addRequestInterceptor({
     fulfilled: async (config) => {
       const accessStore = useAccessStore();
-
       config.headers.Authorization = formatToken(accessStore.accessToken);
       config.headers['Accept-Language'] = preferences.app.locale;
+      // RuoYi-Vue-Plus 要求所有请求携带 clientid 头
+      config.headers.clientid = CLIENT_ID;
       return config;
     },
   });
 
-  // 处理返回的响应数据格式
-  client.addResponseInterceptor(
-    defaultResponseInterceptor({
-      codeField: 'code',
-      dataField: 'data',
-      successCode: 0,
-    }),
-  );
+  // 处理返回的响应数据格式（RuoYi-Vue-Plus 成功码为 200）
+client.addResponseInterceptor(
+  defaultResponseInterceptor({
+    codeField: 'code',
+    dataField: 'data',
+    successCode: 200,
+  }),
+);
 
   // token过期的处理
   client.addResponseInterceptor(

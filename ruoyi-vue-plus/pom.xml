@@ -443,6 +443,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 销售实时分析模块 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-sales</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!--  工作流模块  -->
             <dependency>
                 <groupId>org.dromara</groupId>

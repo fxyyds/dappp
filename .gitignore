@@ -48,3 +48,8 @@ deploy/docker/data/
 # ===== StreamPark / 发行包（大文件，不入库）=====
 deploy/streampark/*.tar.gz
 deploy/streampark/apache-streampark*/
+deploy/flink/*.tgz
+deploy/flink/flink-*/
+
+# ===== 构建产物 =====
+datagen/dependency-reduced-pom.xml

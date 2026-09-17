@@ -11,6 +11,8 @@ import {
 export const overridesPreferences = defineOverridesPreferences({
   // overrides
   app: {
+    // 后端路由模式：菜单由 RuoYi-Vue-Plus getRouters 接口提供
+    accessMode: 'backend',
     name: import.meta.env.VITE_APP_TITLE,
   },
   copyright: appCopyrightPreferences,

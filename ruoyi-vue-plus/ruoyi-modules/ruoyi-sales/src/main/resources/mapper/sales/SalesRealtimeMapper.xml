@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.sales.mapper.SalesRealtimeMapper">
+
+    <select id="selectOverview" resultType="org.dromara.sales.domain.vo.SalesOverviewVo">
+        SELECT
+            COALESCE(SUM(sale_amount), 0)   AS saleAmount,
+            COALESCE(SUM(order_count), 0)   AS orderCount,
+            COALESCE(SUM(product_count), 0) AS productCount
+        FROM sales_realtime_agg
+        WHERE tenant_id = #{tenantId}
+          AND stat_minute >= CURDATE()
+    </select>
+
+    <select id="selectTrend" resultType="org.dromara.sales.domain.vo.SalesTrendVo">
+        SELECT
+            stat_minute      AS statMinute,
+            SUM(sale_amount) AS saleAmount,
+            SUM(order_count) AS orderCount
+        FROM sales_realtime_agg
+        WHERE tenant_id = #{tenantId}
+          AND stat_minute >= #{startTime}
+        GROUP BY stat_minute
+        ORDER BY stat_minute
+    </select>
+
+    <select id="selectDimRank" resultType="org.dromara.sales.domain.vo.SalesDimRankVo">
+        SELECT
+            ${dimColumn}     AS name,
+            SUM(sale_amount) AS saleAmount,
+            SUM(order_count) AS orderCount
+        FROM sales_realtime_agg
+        WHERE tenant_id = #{tenantId}
+          AND stat_minute >= CURDATE()
+        GROUP BY ${dimColumn}
+        ORDER BY saleAmount DESC
+        LIMIT #{topN}
+    </select>
+
+    <select id="selectProductRank" resultType="org.dromara.sales.domain.vo.SalesProductRankVo">
+        SELECT
+            product_id        AS productId,
+            MAX(product_name) AS productName,
+            MAX(category)     AS category,
+            SUM(pay_amount)   AS saleAmount,
+            SUM(quantity)     AS saleQuantity
+        FROM sales_detail
+        WHERE tenant_id = #{tenantId}
+          AND pay_minute >= CURDATE()
+        GROUP BY product_id
+        ORDER BY saleAmount DESC
+        LIMIT #{topN}
+    </select>
+
+</mapper>
